@@ -1,0 +1,3 @@
+module SlackExample
+
+let foo () = ()
