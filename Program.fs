@@ -1,4 +1,4 @@
 ﻿[<EntryPoint>]
 let main _ =
-    TelegramExample.test |> Async.RunSynchronously
+    SlackExample.test ()
     0
