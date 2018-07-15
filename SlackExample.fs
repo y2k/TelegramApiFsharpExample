@@ -1,44 +1,28 @@
 module SlackExample
 
 open System
-open System.Diagnostics
-open System.Web
 open SlackAPI
 
-let clientId = "PUT_CLIENT_ID_FROM_SLACK_APPLICATION_REGISTATION_HERE";
-let clientSecret = "PUT_CLIENT_SECRET_FROM_SLACK_APPLICATION_REGISTATION_HERE";
-let redirectUri = "PUT_REDIRECT_FROM_SLACK_APPLICATION_REGISTATION_HERE";
+let userId = Environment.GetEnvironmentVariable "SLACK_API_USERID"
+let password = Environment.GetEnvironmentVariable "SLACK_API_PASSWORD"
 
-let test () =
-    let state = Guid.NewGuid().ToString()
-    let uri = SlackClient.GetAuthorizeUri(clientId, SlackScope.Identify + SlackScope.Read + SlackScope.Post, redirectUri, state, "socialsaleslounge")
-    Console.WriteLine("Directing to: " + (string uri))
-    Process.Start("open", uri.ToString()) |> ignore
+let test =
+    async {
+        let! response =
+            SlackTaskClient.AuthSignin (userId, "T09229ZC6", password)
+            |> Async.AwaitTask
 
-    Console.WriteLine("Paste in the URL of the authentication result...")
-    let mutable asString = Console.ReadLine()
-    let index = asString.IndexOf('?')
-    if index <> -1 then
-        asString <- asString.Substring(index + 1)
+        printfn 
+            "team = %O | token = %O | user = %O | error = %O | ok = %O" 
+            response.team response.token response.user response.error response.ok
 
-    let qs = HttpUtility.ParseQueryString(asString)
-    let code = qs.["code"]
-    let newState = qs.["state"]
+        let client = SlackTaskClient response.token
 
-    if state <> newState then
-        raise <| new InvalidOperationException("State mismatch.")
+        let! channels = client.GetChannelListAsync () |> Async.AwaitTask
 
-    Console.WriteLine("Requesting access token...")
-    SlackClient.GetAccessToken(
-        Action<_>(fun response -> 
-            let accessToken = response.access_token;
-            Console.WriteLine("Got access token '{0}'...", accessToken);
+        channels.channels 
+        |> Array.sortByDescending (fun x -> x.num_members) 
+        |> Array.map (fun x -> sprintf "%s (%i)" x.name x.num_members)
+        |> printfn "Channels = %A"
 
-            // post...
-            let client = new SlackClient(accessToken);
-            client.PostMessage(null, "#registrations", "Test", "Jo the Robot");
-            ()), 
-        clientId, clientSecret, redirectUri, code)
-    Console.WriteLine("Done.");
-
-let foo () = ()
+    }

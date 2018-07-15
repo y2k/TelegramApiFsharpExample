@@ -1,4 +1,4 @@
 ﻿[<EntryPoint>]
 let main _ =
-    SlackExample.test ()
+    SlackExample.test |> Async.RunSynchronously
     0
