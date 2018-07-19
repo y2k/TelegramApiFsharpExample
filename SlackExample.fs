@@ -25,4 +25,17 @@ let test =
         |> Array.map (fun x -> sprintf "%s (%i)" x.name x.num_members)
         |> printfn "Channels = %A"
 
+        let id =
+            channels.channels
+            |> Array.find (fun x -> x.name = "russian")
+
+        let! history =
+            client.GetChannelHistoryAsync (id, count = Nullable 10)
+            |> Async.AwaitTask
+
+        history.messages
+        |> Array.map (fun x -> sprintf "(%s) %s" x.username x.text)
+        |> printfn "Messages = %A"
+
+        ()
     }
